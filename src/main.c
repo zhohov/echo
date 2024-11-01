@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -42,6 +44,22 @@ int main(int argc, char **argv)
 
     if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) < 0) {
         return -1;
+    }
+
+    // Iterate through the linked list of all addrinfo structures and bind to the first one that is available
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            perror("server: socket");
+            continue;
+        }
+        
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("server: bind");
+            continue;
+        }
+
+        break;
     }
 
     return 0; 
