@@ -139,6 +139,35 @@ int main(int argc, char **argv)
             return -1;
         }
 
+        char buffer[1024];
+        memset(buffer, 0, sizeof(buffer));
+        size_t bytes_received = recv(new_fd, buffer, sizeof(buffer) - 1, 0);
+        
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0';
+            printf("Received request:\n%s\n", buffer);
+        } else if (bytes_received == -1) {
+            perror("server: recv");
+        }
+
+        /* 
+         * send() syscall
+         *
+         * transmit a message to another socket
+         *
+         * int send(int sockfd, const void *msg, int len, int flags); 
+         *
+         * */
+        
+        char response[2048];
+        const char *msg = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\nConnection: keep-alive\r\n\r\n%s";
+        ssize_t len = snprintf(response, sizeof(response), msg, (size_t)bytes_received, buffer);
+
+        size_t bytes_send = send(new_fd, response, len, 0);
+        if (bytes_send == -1) {
+            perror("server: send");
+        }
+
         // close accepted sockfd
         close(new_fd);
     }
